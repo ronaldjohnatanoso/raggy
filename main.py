@@ -73,7 +73,23 @@ async def rag_query_pdf_ai(ctx: inngest.Context) :
         auth_key=os.getenv("OPENAI_API_KEY"),
         model="gpt-4o-mini"
     )
+    
+    res = await ctx.step.ai.infer(
+        "llm-answer",
+        adapter=adapter,
+        body={
+            "max_tokens":1024,
+            "temperature":0.2,
+            "messages":[
+                {"role":"system","content":"you answer using only the provided content"},
+                {"role":"user","content":user_content}
+            ]
+        }
+    )
+    
+    answer = res["choices"][0]["message"]["content"].strip()
+    return {"answer": answer, "sources": found.sources, "num_contexts": len(found.contexts)}
 
 app = FastAPI()
 
-inngest.fast_api.serve(app, inngest_client, [rag_ingest_pdf])
+inngest.fast_api.serve(app, inngest_client, [rag_ingest_pdf, rag_query_pdf_ai])
