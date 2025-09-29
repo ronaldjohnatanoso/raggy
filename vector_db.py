@@ -13,3 +13,27 @@ class QdrantStorage:
                     distance=Distance.COSINE
                 )
             )
+            
+    def upsert(self,ids,vectors, payloads):
+        points = [PointStruct(id=ids[i], vector=vectors[i], payload=payloads[i]) for i in range(len(ids))]
+        self.client.upsert(self.collection, points=points)
+        
+    def search(self, query_vector10, top_k=5):
+        results = self.client.search(
+            collection_name=self.collection,
+            query_vector=query_vector10,
+            limit=top_k,
+            with_payload=True
+        )
+        contexts = []
+        sources = set()
+        
+        for r in results:
+            payload = getattr(r, "payload", None) or {}
+            text=payload.get("text", "")
+            soure = payload.get("source", "")
+            if text: 
+                contexts.append(text)
+                sources.add(soure)
+                
+        return {"contexts": contexts, "sources": list(sources)}
